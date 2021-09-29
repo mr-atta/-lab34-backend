@@ -4,13 +4,14 @@ const express = require("express");
 const router = express.Router();
 const permissions = require("../middleware/acl.js");
 const bearerAuth = require("../middleware/bearerAuth");
-const { userCollection, users, todoModel, todoCollection } = require("../models/index");
+const { userCollection,users, todoModel ,todoCollection} = require("../models/index");
 
 
 // add routes
 router.get("/Item", bearerAuth, permissions("delete"), getItem);
 router.get("/todo", bearerAuth, getItemById);
 router.post("/todo", bearerAuth, createItem);
+router.put("/todo", bearerAuth, updateItem);
 router.delete("/todo", bearerAuth, deleteItem);
 
 async function getItem(req, res) {
@@ -26,12 +27,25 @@ async function getItemById(req, res) {
 
 async function createItem(req, res) {
   let update = req.body;
-  let data = await todoModel.findOne({ where: { userId: req.userId } });
+  let data = await todoModel.findOne({ where: { userId: req.userId} });
   let id = data.dataValues.id;
   let item = data.dataValues.todo;
   let newArray = [...item, update];
   let toDo = await todoCollection.update(id, { todo: newArray });
   res.send(toDo);
+}
+
+async function updateItem(req, res) {
+  let arrayIndex = Number(req.query.index);
+  let update = req.body;
+  let data = await todoModel.findOne({ where: { userId: req.userId } });
+  let item = data.dataValues.todo;
+  let id = data.dataValues.id;
+  if (item.length - 1 >= arrayIndex) {
+    item[arrayIndex] = update;
+    let toDo = await todoCollection.update(id, { todo: item });
+    res.send(toDo);
+  }
 }
 
 async function deleteItem(req, res) {
